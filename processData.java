@@ -12,14 +12,10 @@ import java.util.Calendar;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.TimeZone;
-import java.io.*;
 import java.time.*;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeFormatterBuilder;
-import java.time.temporal.ChronoField;
+import java.io.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.io.FileWriter;
 
 public class processData {
   //code taken from https://mkyong.com/java/java-convert-ip-address-to-decimal-number/
@@ -40,88 +36,75 @@ public class processData {
     return result;
   }
 
-  //convert string of timestamp to unix time in seconds
-  //MUST BE FIXED
-  public static long tsToUnix(String timestamp){
-    DateFormat dateFormat = new SimpleDateFormat("MM/dd-HH:mm:ss.SSSSS", Locale.ENGLISH); //Specify your locale
-
-    long unixTime = 0;
-    dateFormat.setTimeZone(TimeZone.getTimeZone("GMT+5:30")); //Specify your timezone
-    try {
-      unixTime = dateFormat.parse(timestamp).getTime();
-      unixTime = unixTime / 1000;
-    } catch (ParseException e) {
-      e.printStackTrace();
-    }
-        return unixTime;
-  }
-
-
-
   public static void main(String[] args) {
-    if(args.length != 1) {
-      System.out.println("Usage: java processData filename.csv");
+    if(args.length != 2) {
+      System.out.println("Usage: java processData input.csv output.csv");
       System.exit(1);
     }
-    //arg [1]: file name of csv file
+
+    BufferedReader csvReader = null;
+		FileReader fr = null;
+		BufferedWriter csvWriter = null;
+		FileWriter fw = null;
+
     String filename = args[0];
 
-    //write fields to new file
-    FileWriter csvWriter = new FileWriter("processedData.csv");
-    csvWriter.append("Source IP");
-    csvWriter.append(",");
-    csvWriter.append("Source Port");
-    csvWriter.append(",");
-    csvWriter.append("Destination IP");
-    csvWriter.append(",");
-    csvWriter.append("Destination Port");
-    csvWriter.append(",");
-    csvWriter.append("Timestamp");
-    csvWriter.append(",");
-    csvWriter.append("RuleID");
-    csvWriter.append(",");
-    csvWriter.append("Alert Type");
-    csvWriter.append("\n");
+    try {
+      fr = new FileReader(args[0]);
+      csvReader = new BufferedReader(fr);
+      fw = new FileWriter(args[1]);
+      csvWriter = new BufferedWriter(fw);
 
-    File f = new File(filename);
+      //write fields to new file
+      csvWriter.newLine();
+      csvWriter.write("SrcIP, SrcPort, DestIP, DestPort, Timestamp, RuleID, AlertType");
 
-    //GETTING ERROR ON ROW NEED TO FIX
-    if(f.isFile()){
-      BufferedReader csvReader = new BufferedReader(new FileReader(f));
-      while((row = csvReader.readLine()) != null){
-        String [] data = row.split(",");
-        //process the data
-        //data[] contents: sid, rev, message, classification, priority, timestamp,
-        //srcIP, srcPort, destIP, destPort
-        //convert IPs and timestamp
-        String srcIP = String.valueOf(ipToLong(data[6]));
-        String destIP = String.valueOf(ipToLong(data[8]));
-        String ts = String.valueOf(tsToUnix(data[5]));
+      File f = new File(filename);
+      String row = "";
 
-        //write data fields to output file
-        csvWriter.append(srcIP);
-        csvWriter.append(",");
-        csvWriter.append(data[7]);
-        csvWriter.append(",");
-        csvWriter.append(destIP);
-        csvWriter.append(",");
-        csvWriter.append(data[9]);
-        csvWriter.append(",");
-        csvWriter.append(ts);
-        csvWriter.append(",");
-        csvWriter.append(data[2]);
-        csvWriter.append(",");
-        csvWriter.append(data[3]);
-        csvWriter.append("\n");
+      if(f.isFile()){
+        try {
+          csvReader = new BufferedReader(new FileReader(f));
+          while((row = csvReader.readLine()) != null){
+            String [] data = row.split(",");
+            //process the data
+            //data[] contents: sid, rev, message, classification, priority, timestamp,
+            //srcIP, srcPort, destIP, destPort
+            //convert IPs
+            String srcIP = String.valueOf(ipToLong(data[6]));
+            String destIP = String.valueOf(ipToLong(data[8]));
+            String ts = String.valueOf(data[5]);
+
+            //write data fields to output file
+            csvWriter.newLine();
+            String toWrite = srcIP+","+data[7]+","+destIP+","+data[9]+","
+                +ts+","+data[2]+","+data[3];
+            csvWriter.write(toWrite);
+          }
+        } catch (FileNotFoundException e){
+          e.printStackTrace();
+        } catch (IOException e){
+          e.printStackTrace();
+        } finally {
+          if (csvReader != null) {
+            try {
+              csvReader.close();
+              csvWriter.flush();
+              csvWriter.close();
+            } catch (IOException e){
+              e.printStackTrace();
+            }
+          }
+        }
+        System.out.println("Data written to \"processedData.csv\".");
       }
-      csvReader.close();
-      csvWriter.flush();
-      csvWriter.close();
-      System.out.println("Data written to \"processedData.csv\".");
+      else{
+        System.out.println("Error: File \"" + filename +"\" does not exist.");
+        System.exit(1);
+      }
+    } catch (IOException e){
+      e.printStackTrace();
     }
-    else{
-      System.out.println("Error: File \"" + filename +"\" does not exist.");
-      System.exit(1);
-    }
+
   }
 }

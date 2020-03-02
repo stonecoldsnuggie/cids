@@ -14,6 +14,7 @@ public class alert
 	private String classification;
 	private int priority;
 	private LocalDateTime atime;
+	private long epochTime; //added by 2/C Guzzi
 	private String srcIP;
 	private String destIP;
 	private String srcPort;
@@ -57,7 +58,11 @@ public class alert
 		//DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MM/dd-HH:mm:ss.SSSSSS");
 		// set year to 2012
 		atime = LocalDateTime.parse(list2[0], f);
-//		atime = atime.withYear(2012);
+		//		atime = atime.withYear(2012);
+		//establish time zone (use default for now)
+		ZoneId zoneId = ZoneId.systemDefault();
+		// convert time to Epoch Time
+		epochTime = atime.atZone(zoneId).toEpochSecond();
 		// extract source ip
 		pos2=list2[1].lastIndexOf(":");
 		if (pos2 >=0) {
@@ -84,7 +89,7 @@ public class alert
 	public String genCSVOutput()
 	{
 		String str = String.valueOf(sid)+","+String.valueOf(rev)+","+"\""+message+"\""+","+classification+","
-				+ String.valueOf(priority)+ ","+ String.valueOf(atime)+ "," + srcIP + "," + String.valueOf(srcPort)
+				+ String.valueOf(priority)+ ","+ String.valueOf(epochTime)+ "," + srcIP + "," + String.valueOf(srcPort)
 				+"," + destIP + "," + String.valueOf(destPort)+"\n";
 		return str;
 
